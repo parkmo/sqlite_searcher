@@ -17,6 +17,9 @@ class c_db_finder():
     self.conn = None
     self.myre = re.compile(options.regex)
     self.prt_after_len = 20
+    self.opt_multi = 1
+    if ( options.soption  == "1" ):
+      self.opt_multi = 0
 
   def db_close(self):
     self.conn.close()
@@ -36,7 +39,7 @@ class c_db_finder():
        table_name = table_name[0]
        callback_func(table_name)
 
-  def check_string(self, col_name, data, prt_keys, start_pos = 0):
+  def check_string(self, col_name, data, prt_keys, start_pos = 0, opt_multi = 0):
      if ( start_pos == 0 ):
         cur_data = data[col_name]
      else:
@@ -51,7 +54,8 @@ class c_db_finder():
            key_str = "(" + ("-".join(list(map(lambda x:str(data[x]), prt_keys.split(","))))) + ")"
         print("Keys[%s] Col[%s] Data[%s]" \
         % (key_str, col_name, cur_data[my_match.start():my_match.end()+self.prt_after_len]))
-        self.check_string(col_name, data, prt_keys, start_pos+my_match.end())
+        if ( opt_multi ):
+          self.check_string(col_name, data, prt_keys, start_pos+my_match.end())
 
   def print_table(self, str_tblname):
     dbquery = "SELECT sql FROM sqlite_master WHERE name='%s';" % (str_tblname )
@@ -74,7 +78,7 @@ class c_db_finder():
       if CurRow == None:
         break
       for cur_col in CurRow.keys():
-         self.check_string(cur_col, CurRow, self.options.keys)
+         self.check_string(cur_col, CurRow, self.options.keys, opt_multi = self.opt_multi)
 
   def do_it(self):
     self.db_connect()
@@ -99,6 +103,8 @@ def main():
   help="keys ex. head1,head2 ", default=None)
   g_OptParser.add_option("-c", "--cmd", dest="cmd",
   help="commands [ do | list ] default [ do ]", default="do")
+  g_OptParser.add_option("-o", "--option", dest="soption",
+  help="search option [ 1 | m ] m (multi) 1(one row) default [ m ]", default="m")
   g_OptParser.add_option("-r", "--regex", dest="regex",
   help="search RegEx ex. '&#[0-9]{1,5};'", default=None)
   (options, args) = g_OptParser.parse_args()
